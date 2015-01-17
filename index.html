@@ -91,7 +91,13 @@
     </footer>
         
       <script>
+		var index
+	
         $( document ).ready(function() {
+
+            $.getJSON( "data/index.json", function( data ) {
+                index = data
+            });
 
           var baseLayer = L.tileLayer(
             'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
@@ -127,7 +133,6 @@
           });
 
           $.getJSON( "data/points.json", function( data ) {
-              
               heatmapLayer.setData(data);
 
           });

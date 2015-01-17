@@ -7,7 +7,11 @@ from sdipylib.url import download_ambry_db # install: pip install 'git+https://g
 from lib import plot_rhythm
 import csv
 import re
+import os
+import json
 
+here = os.path.abspath(os.path.dirname(__file__))
+data_dir = os.path.join(os.path.dirname(here), 'data')
 
 download_ambry_db('http://s3.sandiegodata.org/library/clarinova.com/crime-incidents-casnd-linked-0.1.2/crimes.db')
 download_ambry_db('http://s3.sandiegodata.org/library/clarinova.com/places-casnd-0.1.7/areastats.db')
@@ -52,7 +56,7 @@ for i, row in enumerate(cur.execute(q)):
 
     area = row['community'] if row['community'] != '-' else row['city_name']
 
-    if area == 'Unincorporated':
+    if not area or  area == 'Unincorporated':
         continue
 
     if not area in by_area:
@@ -65,24 +69,39 @@ for i, row in enumerate(cur.execute(q)):
     
     if i % 50000 == 0:
         print "Loaded {} records".format(i)
+        
     
  
-
 rep = re.compile('[\W_]+')
- 
+index = dict(
+    legends = {},
+    areas = {},
+    files = {}
+)
+
 for area, area_rows in by_area.items():
     for legend, legend_rows in area_rows.items():
         legend_file_name = rep.sub('',legend.lower())
         area_file_name =  rep.sub('',area.lower())
         fn = 'incidents-{}-{}.csv'.format(area_file_name, legend_file_name)
+        afn = os.path.join(os.path.dirname(here), 'data',fn) 
+        
+        index['legends'][legend_file_name] = legend
+        index['areas'][area_file_name] = area
+        
+        if area.lower() not in index['files']:
+            index['files'][area_file_name] = {}
+            
+        index['files'][area_file_name][legend_file_name] = fn
+        
         print "Writing file", fn
-        with open(fn,'w') as f:
+        with open(afn,'w') as f:
            w = csv.writer(f)
            w.writerow('hour dow woy doy'.split())
            w.writerows(legend_rows)
-    
    
-
    
-        
+with open(os.path.join(os.path.dirname(here), 'data','index.json'), 'w' ) as f:
+    f.write(json.dumps(index, indent = 4))    
+   
     
